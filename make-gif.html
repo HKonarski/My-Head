@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Gerador de GIF - PokeNilbas</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;max-width:820px;margin:24px auto;padding:0 12px}
+    label{display:block;margin:8px 0 4px}
+    input[type=number]{width:100px}
+    canvas{background:#fff;display:block;margin:12px 0;border:1px solid #ddd}
+    .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    button{padding:8px 12px}
+  </style>
+</head>
+<body>
+  <h1>Gerador de GIF — PokeNilbas</h1>
+  <p>Esta página gera um GIF animado a partir de <strong>img/PokeNilbas com estil.png</strong>. Ajuste parâmetros e clique em <em>Gerar GIF</em>.</p>
+
+  <div class="controls">
+    <div>
+      <label>Frames</label>
+      <input id="frames" type="number" value="20" min="1" />
+    </div>
+    <div>
+      <label>Delay (ms)</label>
+      <input id="delay" type="number" value="80" min="10" />
+    </div>
+    <div>
+      <label>Amplitude (px)</label>
+      <input id="amplitude" type="number" value="8" />
+    </div>
+    <div>
+      <label>Rotação máxima (graus)</label>
+      <input id="rotation" type="number" value="6" />
+    </div>
+    <div style="margin-top:18px">
+      <button id="previewBtn">Visualizar</button>
+      <button id="generateBtn">Gerar GIF</button>
+      <a id="downloadLink" style="display:none;margin-left:8px">Baixar GIF</a>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.min.js"></script>
+  <script>
+    const imgPath = 'img/PokeNilbas com estil.png';
+    const img = new Image();
+    img.src = encodeURI(imgPath);
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    const framesInput = document.getElementById('frames');
+    const delayInput = document.getElementById('delay');
+    const amplitudeInput = document.getElementById('amplitude');
+    const rotationInput = document.getElementById('rotation');
+    const previewBtn = document.getElementById('previewBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadLink = document.getElementById('downloadLink');
+
+    let loaded = false;
+    img.onload = () => {
+      canvas.width = img.width;
+      canvas.height = img.height;
+      loaded = true;
+      drawFrame(0, 0, 0);
+    };
+
+    function drawFrame(offsetY, rotateDeg, alpha=1){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.translate(canvas.width/2, canvas.height/2 + offsetY);
+      ctx.rotate(rotateDeg * Math.PI/180);
+      ctx.drawImage(img, -img.width/2, -img.height/2);
+      ctx.restore();
+    }
+
+    function generateFramesArray(){
+      const n = parseInt(framesInput.value,10) || 10;
+      const amp = parseFloat(amplitudeInput.value) || 0;
+      const rot = parseFloat(rotationInput.value) || 0;
+      const frames = [];
+      for(let i=0;i<n;i++){
+        const t = i / n;
+        const y = Math.sin(t * Math.PI * 2) * amp;
+        const r = Math.sin(t * Math.PI * 2) * rot;
+        frames.push({y, r});
+      }
+      return frames;
+    }
+
+    previewBtn.addEventListener('click', ()=>{
+      if(!loaded){alert('Aguarde a imagem carregar.');return}
+      const frames = generateFramesArray();
+      let i=0;
+      const run = ()=>{
+        const f = frames[i%frames.length];
+        drawFrame(f.y, f.r);
+        i++;
+        if(i<frames.length*2) requestAnimationFrame(run);
+      };
+      run();
+    });
+
+    generateBtn.addEventListener('click', ()=>{
+      if(!loaded){alert('Aguarde a imagem carregar.');return}
+      downloadLink.style.display='none';
+      const frames = generateFramesArray();
+      const delay = parseInt(delayInput.value,10) || 100;
+
+      const gif = new GIF({workers:2,quality:10,workerScript:'https://cdnjs.cloudflare.com/ajax/libs/gif.js/0.2.0/gif.worker.js'});
+
+      // Draw each frame to canvas then add to gif
+      frames.forEach(f=>{
+        drawFrame(f.y, f.r);
+        gif.addFrame(canvas, {copy:true, delay: delay});
+      });
+
+      gif.on('finished', function(blob){
+        const url = URL.createObjectURL(blob);
+        downloadLink.href = url;
+        downloadLink.download = 'poke_nilbas.gif';
+        downloadLink.textContent = 'Baixar GIF (clique aqui)';
+        downloadLink.style.display = 'inline-block';
+      });
+
+      gif.render();
+    });
+  </script>
+</body>
+</html>
