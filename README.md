@@ -1,5 +1,7 @@
 # head-spinning-HTML+CSS+GSAP
-
-
-
-![](head-gif.gif)
+## Checklist
+- [ ] Testei as alterações localmente
+- [ ] O projeto está funcionando corretamente
+- [ ] Não existem erros no console
+- [ ] Atualizei o README, caso necessário
+- [ ] Revisei minhas alterações antes de solicitar o merg
